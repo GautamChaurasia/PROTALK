@@ -3,7 +3,12 @@ const router = require("express").Router();
 
 router.post("/register", async (req, res) => {
     try{
-        const {email} = req.body
+        const {name, email, pwd} = req.body
+        if (!name || !email || !pwd) {
+            res.status(400);
+            throw new Error("Please Enter All the Fields");
+        }
+
         let userDets = await user.findOne({email}, {__v:0});
         if(userDets===null){
             let userentry = user(req.body);
@@ -12,6 +17,7 @@ router.post("/register", async (req, res) => {
         }
         else res.status(409).send("Email already registered with another user");
     }catch(e){
+        console.log(e)
         res.status(400).send("Resgistration failed, please try Again");
     }
 });
@@ -20,7 +26,7 @@ router.post("/login", async (req, res)=>{
     try{
         const {email, pwd} = req.body
         let userdisp = await user.findOne({email}, {__v:0});
-        if (userdisp.pwd == pwd){
+        if (userdisp && (await userdisp.matchPassword(pwd))){
             const token = await userdisp.genToken();
             res.cookie("btoken", token, {
                 expires: new Date(Date.now()+1200000), // 20 mins
@@ -34,6 +40,7 @@ router.post("/login", async (req, res)=>{
             res.status(404).send('Invalid Credentials');
         }
     }catch(e){
+        console.log(e)
         res.status(400).send("Oops! Please retry");
     }
 });
@@ -41,7 +48,7 @@ router.post("/login", async (req, res)=>{
 router.get("/logout", (req, res)=>{
     res.clearCookie(
         'btoken', {sameSite: 'none', secure: true,}
-        ).send();
+        ).send('Cookies cleared');
     });
     
 // router.get("/home", auth, (req, res)=>{

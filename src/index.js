@@ -4,20 +4,22 @@ const cors = require('cors');
 const cookie = require('cookie-parser')
 const express = require("express");
 const app = express();
+const server = require('http').Server(app)
+const io = require('socket.io')(server)
 
 const port = process.env.PORT
 
-app.use(cors({credentials:true, origin:["http://localhost:3000"]}));
+app.use(cors({credentials:true, origin:["*"]}));
 app.use(express.json());
 app.use(cookie());
 app.use('/', require("./routers/protalk"));
-// app.use('/chat', require("./router/chat"));
-// app.use('/conf', require("./router/conference"));
+// app.use('/chat', require("./routers/chat"));
+app.use('/conf', require("./routers/conference")(io));
 
 app.get("/", (req, res)=>{
     res.send("Welcome to PROTALK backend !");
 });
 
-app.listen(port, ()=>{
+server.listen(port, ()=>{
     console.log(`PROTALK server up at: http://localhost:${port}`);
 });

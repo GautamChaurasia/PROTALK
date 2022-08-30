@@ -1,3 +1,4 @@
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken")
 const mong = require("mongoose");
 
@@ -8,11 +9,17 @@ const userSchema = new mong.Schema({
     }, 
     email:{
         type:String,
+        unique: true,
         required:true
     }, 
     pwd:{
         type:String,
         required:true
+    },
+    pic:{
+        type: "String",
+        default:
+          "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg",
     },
     tokens:[
         {
@@ -22,7 +29,14 @@ const userSchema = new mong.Schema({
             }
         }
     ]
+    },
+    {
+        timestamps: true,
 });
+
+userSchema.methods.matchPassword = async function (enteredPassword) {
+    return await bcrypt.compare(enteredPassword, this.pwd);
+  };
 
 userSchema.methods.genToken = async function() {
     try{
@@ -36,6 +50,14 @@ userSchema.methods.genToken = async function() {
         return "Server Error! Couldn't generate token"
     }
 }
+
+userSchema.pre("save", async function (next) {
+    if (!this.isModified) {
+      next();
+    }
+    const salt = await bcrypt.genSalt(10);
+    this.pwd = await bcrypt.hash(this.pwd, salt);
+  });
 
 const user = mong.model("user", userSchema);
 
